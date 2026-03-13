@@ -1,8 +1,8 @@
-import { useAggregatedMotorData } from '../../hooks/useAggregatedMotorData';
+import { useMotorData } from '../../hooks/useMotorData';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function PressureChart() {
-  const { metrics } = useAggregatedMotorData();
+  const { metrics } = useMotorData();
   const chartData = Object.keys(metrics).map((deviceId) => ({
     name: deviceId,
     pressure: metrics[deviceId].avgPressure,
