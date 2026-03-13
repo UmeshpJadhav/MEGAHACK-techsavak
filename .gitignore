@@ -81,7 +81,6 @@ out
 # Nuxt.js build / generate output
 .nuxt
 dist
-.output
 
 # Gatsby files
 .cache/
@@ -126,9 +125,6 @@ dist
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
 
-# pnpm
-.pnpm-store
-
 # yarn v3
 .pnp.*
 .yarn/*
@@ -138,8 +134,11 @@ dist
 !.yarn/sdks
 !.yarn/versions
 
-# Vite files
+# Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
-.vite/
 firebase-service-account.json
+firebase-service-account.json.json
+
+
+
