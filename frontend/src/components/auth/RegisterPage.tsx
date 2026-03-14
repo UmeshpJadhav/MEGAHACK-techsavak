@@ -1,4 +1,11 @@
 import { useState } from 'react';
+// Device types for assignment
+const DEVICE_TYPE_OPTIONS = [
+  { label: 'Motors', value: 'motor' },
+  { label: 'Pumps', value: 'pump' },
+  { label: 'Generators', value: 'generator' },
+  { label: 'Compressors', value: 'compressor' },
+];
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import type { Role } from '../../context/AuthContext';
@@ -10,6 +17,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<Role>('operator');
+  const [assignedTypes, setAssignedTypes] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +37,9 @@ export default function RegisterPage() {
     try {
       // Public customers always become the admin of their new workspace
       const assignedRole: Role = isPublicRegistration ? 'admin' : role;
-      await register(email, password, name, assignedRole);
+      // Only pass assignedTypes if operator
+      const assignedDevices = (!isPublicRegistration && assignedRole === 'operator') ? assignedTypes : undefined;
+      await register(email, password, name, assignedRole, assignedDevices);
       
       if (isPublicRegistration) {
         // A new customer just signed up (or the very first system admin)
@@ -39,6 +49,7 @@ export default function RegisterPage() {
         setName('');
         setEmail('');
         setPassword('');
+        setAssignedTypes([]);
         alert(`Successfully registered ${name} as ${assignedRole}`);
       }
     } catch (err: any) {
@@ -106,19 +117,45 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* Role selection only visible to admins registering new users */}
+          {/* Role selection and device assignment for admins */}
           {isAdmin && (
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Role</label>
-              <select
-                value={role}
-                onChange={e => setRole(e.target.value as Role)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="operator">Operator — View & monitor devices</option>
-                <option value="admin">Admin — Full system access</option>
-              </select>
-            </div>
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Role</label>
+                <select
+                  value={role}
+                  onChange={e => setRole(e.target.value as Role)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="operator">Operator — View & monitor devices</option>
+                  <option value="admin">Admin — Full system access</option>
+                </select>
+              </div>
+              {role === 'operator' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Assign Device Types</label>
+                  <div className="flex flex-wrap gap-2">
+                    {DEVICE_TYPE_OPTIONS.map(opt => (
+                      <label key={opt.value} className="flex items-center gap-1 text-sm">
+                        <input
+                          type="checkbox"
+                          value={opt.value}
+                          checked={assignedTypes.includes(opt.value)}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setAssignedTypes((prev: string[]) => [...prev, opt.value]);
+                            } else {
+                              setAssignedTypes((prev: string[]) => prev.filter((v: string) => v !== opt.value));
+                            }
+                          }}
+                        />
+                        {opt.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           <button

@@ -1,14 +1,23 @@
 import { useEffect } from 'react';
 import { useAggregatedMotorData } from '../../hooks/useAggregatedMotorData';
 import { useExcludedDevices } from '../../context/ExcludedDevicesContext';
+import { useAuth } from '../../context/AuthContext';
 
 const Extrem = () => {
   const { excludedIds, setExcludedIds } = useExcludedDevices();
   const { schedule } = useAggregatedMotorData();
+  const { profile } = useAuth();
+  const assignedTypes = profile?.assignedDevices || null;
 
-  const maintenanceDevices = Object.entries(schedule).filter(
+  // Only show maintenance devices for assigned types (for operators)
+  let maintenanceDevices = Object.entries(schedule).filter(
     ([, status]) => status === 'Excluded (Maintenance needed)'
   );
+  if (assignedTypes && Array.isArray(assignedTypes)) {
+    maintenanceDevices = maintenanceDevices.filter(([deviceId]) =>
+      assignedTypes.some(type => deviceId.startsWith(type + '-'))
+    );
+  }
 
   // Initially populate the excluded IDs list with all maintenance devices
   useEffect(() => {

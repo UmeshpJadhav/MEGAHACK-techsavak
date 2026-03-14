@@ -1,3 +1,4 @@
+import { useAuth } from '../../context/AuthContext';
 import React, { useState } from 'react';
 import { useRealtimeMotorData } from '../../hooks/useRealtimeMotorData';
 import MotorControl from './MotorControl';
@@ -77,9 +78,23 @@ export default function Device() {
   const realtimeData = useRealtimeMotorData();
   const { excludedIds } = useExcludedDevices();
   const [selectedType, setSelectedType] = useState('all');
+  const { profile } = useAuth();
+  // assignedTypes: array of device type strings (e.g., ['motor', 'pump'])
+  const assignedTypes = profile?.assignedDevices || null;
 
   if (Object.keys(realtimeData).length === 0) {
     return <div style={{ padding: '20px' }}>Loading device data...</div>;
+  }
+
+  // Filter dropdown options: always show 'All Devices', then only assigned types (for operators)
+  let filteredDeviceTypes = DEVICE_TYPES;
+  if (assignedTypes && Array.isArray(assignedTypes)) {
+    filteredDeviceTypes = [
+      DEVICE_TYPES[0], // 'All Devices'
+      ...DEVICE_TYPES.filter(
+        (type) => type.value !== 'all' && assignedTypes.includes(type.value)
+      ),
+    ];
   }
 
   return (
@@ -98,7 +113,7 @@ export default function Device() {
             minWidth: '180px',
           }}
         >
-          {DEVICE_TYPES.map((type) => (
+          {filteredDeviceTypes.map((type) => (
             <option key={type.value} value={type.value}>{type.label}</option>
           ))}
         </select>
@@ -107,6 +122,12 @@ export default function Device() {
         {Object.entries(realtimeData)
           .filter(([deviceId]) => !excludedIds.includes(deviceId))
           .filter(([deviceId]) => selectedType === 'all' || deviceId.startsWith(selectedType + '-'))
+          // Only show devices matching assigned types (for operators)
+          .filter(([deviceId]) => {
+            if (!assignedTypes) return true; // admin or not set: show all
+            // deviceId format: type-xxx (e.g., motor-1)
+            return assignedTypes.some(type => deviceId.startsWith(type + '-'));
+          })
           .map(([deviceId, data]) => {
             const temperature = parseFloat(data.temperature);
             const pressure = parseFloat(data.pressure);

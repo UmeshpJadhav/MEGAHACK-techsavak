@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { useParams } from 'react-router-dom';
 import { useHistoricalMotorData } from '../../hooks/useHistoricalMotorData';
 import TemperatureChart from '../charts/TemperatureChart';
@@ -7,7 +8,11 @@ import CurrentChart from '../charts/CurrentChart';
 
 const DeviceAnalytics = () => {
   const { deviceId } = useParams<{ deviceId: string }>();
+  const { profile } = useAuth();
+  const assignedDevices = profile?.assignedDevices || null;
   const [timeRange, setTimeRange] = useState<number>(10); // Default to 10 minutes
+  // Only allow if deviceId is in assignedDevices, or if assignedDevices is null (admin)
+  const allowed = !assignedDevices || assignedDevices.includes(deviceId!);
   const { data, loading, error } = useHistoricalMotorData(deviceId!, timeRange);
 
   const handleTimeRangeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -20,6 +25,10 @@ const DeviceAnalytics = () => {
     pressure: d.pressure,
     current: d.current,
   }));
+
+  if (!allowed) {
+    return <div className="p-5 text-red-600 font-bold">You do not have access to this device's analytics.</div>;
+  }
 
   return (
     <div className="p-5">

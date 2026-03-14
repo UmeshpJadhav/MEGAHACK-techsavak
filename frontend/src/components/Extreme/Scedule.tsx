@@ -1,7 +1,10 @@
 import { useAggregatedMotorData } from '../../hooks/useAggregatedMotorData';
+import { useAuth } from '../../context/AuthContext';
 
 const Scedule = () => {
   const { schedule } = useAggregatedMotorData();
+  const { profile } = useAuth();
+  const assignedTypes = profile?.assignedDevices || null;
   const statusPriority: { [key: string]: number } = {
     'Monitoring Required (Reduced Load)': 1,
     'Evening slot (Heavy Load)': 3,
@@ -9,14 +12,20 @@ const Scedule = () => {
     'Morning slot (Light Load)': 2,
   };
 
-  const operationalSchedule = Object.entries(schedule)
-    .filter(([, status]) => status !== 'Excluded (Maintenance needed)')
-    .sort(([, statusA], [, statusB]) => {
-      const priorityA = statusPriority[statusA] || 99;
-      const priorityB = statusPriority[statusB] || 99;
-      return priorityA - priorityB;
-    });
-    
+  // Filter by assigned device types (for operators)
+  let filteredSchedule = Object.entries(schedule).filter(([, status]) => status !== 'Excluded (Maintenance needed)');
+  if (assignedTypes && Array.isArray(assignedTypes)) {
+    filteredSchedule = filteredSchedule.filter(([deviceId]) =>
+      assignedTypes.some(type => deviceId.startsWith(type + '-'))
+    );
+  }
+
+  const operationalSchedule = filteredSchedule.sort(([, statusA], [, statusB]) => {
+    const priorityA = statusPriority[statusA] || 99;
+    const priorityB = statusPriority[statusB] || 99;
+    return priorityA - priorityB;
+  });
+
   const getStatusColor = (status: string) => {
     if (status.includes('Maintenance')) {
       return 'bg-red-100 border-red-500 text-red-800';
@@ -24,7 +33,7 @@ const Scedule = () => {
     if (status.includes('Monitoring')) {
       return 'bg-yellow-100 border-yellow-500 text-yellow-800';
     }
-     if (status.includes('Light')) {
+    if (status.includes('Light')) {
       return 'bg-green-100 border-green-500 text-green-800';
     }
     if (status.includes('Heavy')) {
@@ -33,7 +42,6 @@ const Scedule = () => {
     if (status.includes('Medium')) {
       return 'bg-blue-100 border-blue-500 text-blue-800';
     }
-   
     return 'bg-gray-100 border-gray-400';
   };
 
